@@ -78,7 +78,7 @@ void main(void)
     LCD_E_initParam initParams = {0};
     initParams.clockSource = LCD_E_CLOCKSOURCE_XTCLK;
     initParams.clockDivider = LCD_E_CLOCKDIVIDER_10;
-    initParams.muxRate = LCD_E_8_MUX;
+    initParams.muxRate = LCD_E_5_MUX;
     initParams.waveforms = LCD_E_STANDARD_WAVEFORMS;
     initParams.segments = LCD_E_SEGMENTS_ENABLED;
 
