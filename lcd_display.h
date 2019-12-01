@@ -11,11 +11,11 @@
 
 void    LcdInit(void);
 
-unsigned int Dec2BCD(int);
+unsigned int Dec2BCD(unsigned int);
 unsigned long int Dec2BcdLong(unsigned long int);
-void LcdDisplayTopRow(int);
-void LcdDisplayMiddleRow(long int);
-void LcdDisplayBottomRow(long int);
+void LcdDisplayTopRow(unsigned int);
+void LcdDisplayMiddleRow(unsigned long int);
+void LcdDisplayBottomRow(unsigned long int);
 
 
 #endif /* LCD_DISPLAY_H_ */

@@ -12,29 +12,6 @@
 
 #include "lcd_display.h"
 
-const char top_row[10]={
-                        0x77, //0
-                        0x12, //1
-                        0xE3, //2
-                        0xD3, //3
-                        0x96, //4
-                        0xD5, //5
-                        0xF5, //6
-                        0x13, //7
-                        0xF7, //8
-                        0x97}; //9
-
-const char middle_row[10]={
-                        0xEE, //0
-                        0xC0, //1
-                        0x5E, //2
-                        0xDA, //3
-                        0xF0, //4
-                        0xBA, //5
-                        0xBE, //6
-                        0xC8, //7
-                        0xFE, //8
-                        0xF8}; //9
 
  char buffer[10];
  unsigned int bcdreturn;
@@ -43,98 +20,388 @@ const char middle_row[10]={
  extern void LcdInit()
      {
 
-     //Port select XT1
-     GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P4,GPIO_PIN1 + GPIO_PIN2,GPIO_PRIMARY_MODULE_FUNCTION);
-
-     //Set external frequency for XT1
-     CS_setExternalClockSource(32768);
-
-     //Select XT1 as the clock source for ACLK with no frequency divider
-     CS_initClockSignal(CS_ACLK, CS_XT1CLK_SELECT, CS_CLOCK_DIVIDER_1);
-
-     //Start XT1 with no time out
-     CS_turnOnXT1(CS_XT1_DRIVE_0);
-
-     //clear all OSC fault flag
-     CS_clearAllOscFlagsWithTimeout(1000);
-
-     /*
-      * Disable the GPIO power-on default high-impedance mode to activate
-      * previously configured port settings
-      */
-     PMM_unlockLPM5();
-
-     // L0~L26 & L36~L39 pins selected
-     LCD_E_setPinAsLCDFunctionEx(LCD_E_BASE, LCD_E_SEGMENT_LINE_0, LCD_E_SEGMENT_LINE_26);
-     LCD_E_setPinAsLCDFunctionEx(LCD_E_BASE, LCD_E_SEGMENT_LINE_36, LCD_E_SEGMENT_LINE_39);
-
-     LCD_E_initParam initParams = LCD_E_INIT_PARAM;
-     initParams.clockDivider = LCD_E_CLOCKDIVIDER_8;
-     initParams.muxRate = LCD_E_8_MUX;
-     initParams.segments = LCD_E_SEGMENTS_ENABLED;
-
-     // Init LCD as 4-mux mode
-     LCD_E_init(LCD_E_BASE, &initParams);
-
-     // LCD Operation - Mode 3, internal 3.08v, charge pump 256Hz
-     LCD_E_setVLCDSource(LCD_E_BASE, LCD_E_INTERNAL_REFERENCE_VOLTAGE, LCD_E_EXTERNAL_SUPPLY_VOLTAGE);
-     LCD_E_setVLCDVoltage(LCD_E_BASE, LCD_E_REFERENCE_VOLTAGE_3_08V);
-
-     LCD_E_enableChargePump(LCD_E_BASE);
-     LCD_E_setChargePumpFreq(LCD_E_BASE, LCD_E_CHARGEPUMP_FREQ_16);
-
-     // Clear LCD memory
-     LCD_E_clearAllMemory(LCD_E_BASE);
-
-     // Configure COMs and SEGs
-     // L0, L1, L2, L3: COM pins
-     // L0 = COM0, L1 = COM1, L2 = COM2, L3 = COM3
-     LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_0, LCD_E_MEMORY_COM0);
-     LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_1, LCD_E_MEMORY_COM1);
-     LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_2, LCD_E_MEMORY_COM2);
-     LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_3, LCD_E_MEMORY_COM3);
      }
 
- void LcdDisplayBottomRow(long int incoming)
+ void LcdDisplayBottomRow(unsigned long int incoming)
           {
-           unsigned long int temp = 0;
-           temp = Dec2BcdLong(incoming);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_7, top_row[(temp & 0xf0000000) >>28]);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_6, top_row[(temp & 0xf000000) >>24]);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_5, top_row[(temp & 0xf00000) >>20]);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_4, top_row[(temp & 0xf0000) >>16]);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_3, top_row[(temp & 0xf000) >>12]);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_2, top_row[(temp & 0x0f00) >>8]);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_1, top_row[(temp & 0xf0) >>4]);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_0, top_row[temp & 0x0f]);
-           LCD_E_on(LCD_E_BASE);    // Turn LCD on
+            unsigned long int temp;
+            unsigned int lsb7;
+            unsigned int lsb6;
+            unsigned int lsb5;
+            unsigned int lsb4;
+            unsigned int lsb3;
+            unsigned int lsb2;
+            unsigned int lsb1;
+            unsigned int lsb0;
+
+            temp = Dec2BcdLong(incoming);
+            lsb7 = (temp & 0xF0000000)>>28;
+            lsb6 = (temp & 0xF000000)>>24;
+            lsb5 = (temp & 0xF00000)>>20;
+            lsb4 = (temp & 0xF0000)>>16;
+            lsb3 = (temp & 0xF000)>>12;
+            lsb2 = (temp & 0xF00)>>8;
+            lsb1 = (temp & 0xF0)>>4;
+            lsb0 = (temp & 0x0F)>>0;
+
+            LCDM37 &= 0x07;LCDM36 &= 0x03;LCDM35 &= 0x07; //clear out bits that are related to digit 13
+            switch(lsb7)
+             {
+             case 0:LCDM37 |= 0x18;LCDM36 |= 0x14;LCDM35 |= 0x18;break;
+             case 1:LCDM37 |= 0x00;LCDM36 |= 0x00;LCDM35 |= 0x18;break;
+             case 2:LCDM37 |= 0x10;LCDM36 |= 0x1C;LCDM35 |= 0x08;break;
+             case 3:LCDM37 |= 0x00;LCDM36 |= 0x1C;LCDM35 |= 0x18;break;
+             case 4:LCDM37 |= 0x08;LCDM36 |= 0x08;LCDM35 |= 0x18;break;
+             case 5:LCDM37 |= 0x08;LCDM36 |= 0x1C;LCDM35 |= 0x10;break;
+             case 6:LCDM37 |= 0x18;LCDM36 |= 0x1C;LCDM35 |= 0x10;break;
+             case 7:LCDM37 |= 0x00;LCDM36 |= 0x04;LCDM35 |= 0x18;break;
+             case 8:LCDM37 |= 0x18;LCDM36 |= 0x1C;LCDM35 |= 0x18;break;
+             case 9:LCDM37 |= 0x08;LCDM36 |= 0x1C;LCDM35 |= 0x18;break;
+            }
+
+            LCDM34 &= 0x07;LCDM33 &= 0x03;LCDM32 &= 0x013;//clear out bits that are related to digit 14
+            switch(lsb6)
+              {
+              case 0:LCDM34 |= 0x18;LCDM33 |= 0x14;LCDM32 |= 0x0C;break;
+              case 1:LCDM34 |= 0x00;LCDM33 |= 0x00;LCDM32 |= 0x0C;break;
+              case 2:LCDM34 |= 0x10;LCDM33 |= 0x1C;LCDM32 |= 0x04;break;
+              case 3:LCDM34 |= 0x00;LCDM33 |= 0x1C;LCDM32 |= 0x0C;break;
+              case 4:LCDM34 |= 0x08;LCDM33 |= 0x08;LCDM32 |= 0x0C;break;
+              case 5:LCDM34 |= 0x08;LCDM33 |= 0x1C;LCDM32 |= 0x08;break;
+              case 6:LCDM34 |= 0x18;LCDM33 |= 0x1C;LCDM32 |= 0x08;break;
+              case 7:LCDM34 |= 0x00;LCDM33 |= 0x04;LCDM32 |= 0x0C;break;
+              case 8:LCDM34 |= 0x18;LCDM33 |= 0x1C;LCDM32 |= 0x0C;break;
+              case 9:LCDM34 |= 0x08;LCDM33 |= 0x1C;LCDM32 |= 0x0C;break;
+             }
+
+            LCDM31 &= 0x07;LCDM30 &= 0x03;LCDM29 &=0x07;    //clear out bits that are related to digit15
+
+            switch(lsb5)
+               {
+               case 0:LCDM31 |= 0x18;LCDM30 |= 0x14;LCDM29 |= 0x18;break;
+               case 1:LCDM31 |= 0x00;LCDM30 |= 0x00;LCDM29 |= 0x18;break;
+               case 2:LCDM31 |= 0x10;LCDM30 |= 0x1C;LCDM29 |= 0x08;break;
+               case 3:LCDM31 |= 0x00;LCDM30 |= 0x1C;LCDM29 |= 0x18;break;
+               case 4:LCDM31 |= 0x08;LCDM30 |= 0x08;LCDM29 |= 0x18;break;
+               case 5:LCDM31 |= 0x08;LCDM30 |= 0x1C;LCDM29 |= 0x10;break;
+               case 6:LCDM31 |= 0x18;LCDM30 |= 0x1C;LCDM29 |= 0x10;break;
+               case 7:LCDM31 |= 0x00;LCDM30 |= 0x04;LCDM29 |= 0x18;break;
+               case 8:LCDM31 |= 0x18;LCDM30 |= 0x1C;LCDM29 |= 0x18;break;
+               case 9:LCDM31 |= 0x08;LCDM30 |= 0x1C;LCDM29 |= 0x18;break;
+              }
+
+        LCDM28 &= 0x07;LCDM27 &= 0x03;LCDM26 &= 0x013; //clear out bits that are related to digit 16
+
+         switch(lsb4)
+            {
+            case 0:LCDM28 |= 0x18;LCDM27 |= 0x14;LCDM26 |= 0x0C;break;
+            case 1:LCDM28 |= 0x00;LCDM27 |= 0x00;LCDM26 |= 0x0C;break;
+            case 2:LCDM28 |= 0x10;LCDM27 |= 0x1C;LCDM26 |= 0x04;break;
+            case 3:LCDM28 |= 0x00;LCDM27 |= 0x1C;LCDM26 |= 0x0C;break;
+            case 4:LCDM28 |= 0x08;LCDM27 |= 0x08;LCDM26 |= 0x0C;break;
+            case 5:LCDM28 |= 0x08;LCDM27 |= 0x1C;LCDM26 |= 0x08;break;
+            case 6:LCDM28 |= 0x18;LCDM27 |= 0x1C;LCDM26 |= 0x08;break;
+            case 7:LCDM28 |= 0x00;LCDM27 |= 0x04;LCDM26 |= 0x0C;break;
+            case 8:LCDM28 |= 0x18;LCDM27 |= 0x1C;LCDM26 |= 0x0C;break;
+            case 9:LCDM28 |= 0x08;LCDM27 |= 0x1C;LCDM26 |= 0x0C;break;
+           }
+
+         LCDM25 &= 0x07;LCDM24 &= 0x03;LCDM23 &= 0x013;  //clear out bits that are related to digit 17
+
+        switch(lsb3)
+           {
+           case 0:LCDM25 |= 0x18;LCDM24 |= 0x14;LCDM23 |= 0x0C;break;
+           case 1:LCDM25 |= 0x00;LCDM24 |= 0x00;LCDM23 |= 0x0C;break;
+           case 2:LCDM25 |= 0x10;LCDM24 |= 0x1C;LCDM23 |= 0x04;break;
+           case 3:LCDM25 |= 0x00;LCDM24 |= 0x1C;LCDM23 |= 0x0C;break;
+           case 4:LCDM25 |= 0x08;LCDM24 |= 0x08;LCDM23 |= 0x0C;break;
+           case 5:LCDM25 |= 0x08;LCDM24 |= 0x1C;LCDM23 |= 0x08;break;
+           case 6:LCDM25 |= 0x18;LCDM24 |= 0x1C;LCDM23 |= 0x08;break;
+           case 7:LCDM25 |= 0x00;LCDM24 |= 0x04;LCDM23 |= 0x0C;break;
+           case 8:LCDM25 |= 0x18;LCDM24 |= 0x1C;LCDM23 |= 0x0C;break;
+           case 9:LCDM25 |= 0x08;LCDM24 |= 0x1C;LCDM23 |= 0x0C;break;
           }
 
- void LcdDisplayMiddleRow(long int incoming)
-         {
-          unsigned long int temp = 0;
-          temp = Dec2BcdLong(incoming);
-          LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_20, middle_row[(temp & 0xf0000000) >>28]);
-          LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_19, middle_row[(temp & 0xf000000) >>24]);
-          LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_9, middle_row[(temp & 0xf00000) >>20]);
-          LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_10, middle_row[(temp & 0xf0000) >>16]);
-          LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_11, middle_row[(temp & 0xf000) >>12]);
-          LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_12, middle_row[(temp & 0x0f00) >>8]);
-          LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_13, middle_row[(temp & 0xf0) >>4]);
-          LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_14, middle_row[temp & 0x0f]);
-          LCD_E_on(LCD_E_BASE); // Turn LCD on
+            LCDM22 &= 0x07;LCDM21 &= 0x03; LCDM20 &= 0x07;//clear out bits that are related to digit18
+
+        switch(lsb2)
+           {
+           case 0:LCDM22 |= 0x18;LCDM21 |= 0x14;LCDM20 |= 0x18;break;
+           case 1:LCDM22 |= 0x00;LCDM21 |= 0x00;LCDM20 |= 0x18;break;
+           case 2:LCDM22 |= 0x10;LCDM21 |= 0x1C;LCDM20 |= 0x08;break;
+           case 3:LCDM22 |= 0x00;LCDM21 |= 0x1C;LCDM20 |= 0x18;break;
+           case 4:LCDM22 |= 0x08;LCDM21 |= 0x08;LCDM20 |= 0x18;break;
+           case 5:LCDM22 |= 0x08;LCDM21 |= 0x1C;LCDM20 |= 0x10;break;
+           case 6:LCDM22 |= 0x18;LCDM21 |= 0x1C;LCDM20 |= 0x10;break;
+           case 7:LCDM22 |= 0x00;LCDM21 |= 0x04;LCDM20 |= 0x18;break;
+           case 8:LCDM22 |= 0x18;LCDM21 |= 0x1C;LCDM20 |= 0x18;break;
+           case 9:LCDM22 |= 0x08;LCDM21 |= 0x1C;LCDM20 |= 0x18;break;
+          }
+
+
+        LCDM18 &= 0x07;LCDM17 &= 0x03;LCDM16 &= 0x07;//clear out bits that are related to digit19
+
+       switch(lsb1)
+          {
+          case 0:LCDM18 |= 0x18;LCDM17 |= 0x14;LCDM16 |= 0x18;break;
+          case 1:LCDM18 |= 0x00;LCDM17 |= 0x00;LCDM16 |= 0x18;break;
+          case 2:LCDM18 |= 0x10;LCDM17 |= 0x1C;LCDM16 |= 0x08;break;
+          case 3:LCDM18 |= 0x00;LCDM17 |= 0x1C;LCDM16 |= 0x18;break;
+          case 4:LCDM18 |= 0x08;LCDM17 |= 0x08;LCDM16 |= 0x18;break;
+          case 5:LCDM18 |= 0x08;LCDM17 |= 0x1C;LCDM16 |= 0x10;break;
+          case 6:LCDM18 |= 0x18;LCDM17 |= 0x1C;LCDM16 |= 0x10;break;
+          case 7:LCDM18 |= 0x00;LCDM17 |= 0x04;LCDM16 |= 0x18;break;
+          case 8:LCDM18 |= 0x18;LCDM17 |= 0x1C;LCDM16 |= 0x18;break;
+          case 9:LCDM18 |= 0x08;LCDM17 |= 0x1C;LCDM16 |= 0x18;break;
          }
 
-  void LcdDisplayTopRow(int incoming)
+       LCDM14 &= 0x03;LCDM13 &= 0x03;    //clear out bits that are related to digit19
+
+       switch(lsb0)
         {
-         int temp = 0;
-         temp = Dec2BCD(incoming);
-         LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_18, top_row[(temp & 0xf000) >>12]);
-         LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_17, top_row[(temp & 0x0f00) >>8]);
-         LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_16, top_row[(temp & 0xf0) >>4]);
-         LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_15, top_row[temp & 0x0f]);
-         LCD_E_on(LCD_E_BASE);  // Turn LCD on
+        case 0:LCDM14 |= 0x1C;LCDM13 |= 0x1A;break;
+        case 1:LCDM14 |= 0x00;LCDM13 |= 0x0A;break;
+        case 2:LCDM14 |= 0x14;LCDM13 |= 0x16;break;
+        case 3:LCDM14 |= 0x04;LCDM13 |= 0x1E;break;
+        case 4:LCDM14 |= 0x08;LCDM13 |= 0x0E;break;
+        case 5:LCDM14 |= 0x0C;LCDM13 |= 0x1C;break;
+        case 6:LCDM14 |= 0x1C;LCDM13 |= 0x1C;break;
+        case 7:LCDM14 |= 0x04;LCDM13 |= 0x0A;break;
+        case 8:LCDM14 |= 0x1C;LCDM13 |= 0x1E;break;
+        case 9:LCDM14 |= 0x0C;LCDM13 |= 0x1E;break;
+       }
+
+          }
+
+ void LcdDisplayMiddleRow(unsigned long int incoming)
+         {
+           unsigned long int temp;
+           unsigned int lsb7;
+           unsigned int lsb6;
+           unsigned int lsb5;
+           unsigned int lsb4;
+           unsigned int lsb3;
+           unsigned int lsb2;
+           unsigned int lsb1;
+           unsigned int lsb0;
+
+           temp = Dec2BcdLong(incoming);
+           lsb7 = (temp & 0xF0000000)>>28;
+           lsb6 = (temp & 0xF000000)>>24;
+           lsb5 = (temp & 0xF00000)>>20;
+           lsb4 = (temp & 0xF0000)>>16;
+           lsb3 = (temp & 0xF000)>>12;
+           lsb2 = (temp & 0xF00)>>8;
+           lsb1 = (temp & 0xF0)>>4;
+           lsb0 = (temp & 0x0F)>>0;
+
+           LCDM37 &= 0x18;LCDM36 &= 0x1C;LCDM35 &= 0x1C;   //clear out bits that are related to msb digi 5
+
+       switch(lsb7)
+           {
+           case 0:LCDM35 |= 0x03;LCDM36W |= 0x0702;break;
+           case 1:LCDM35 |= 0x03;LCDM36W |= 0x0000;break;
+           case 2:LCDM35 |= 0x01;LCDM36W |= 0x0503;break;
+           case 3:LCDM35 |= 0x03;LCDM36W |= 0x0103;break;
+           case 4:LCDM35 |= 0x03;LCDM36W |= 0x0201;break;
+           case 5:LCDM35 |= 0x02;LCDM36W |= 0x0303;break;
+           case 6:LCDM35 |= 0x02;LCDM36W |= 0x0703;break;
+           case 7:LCDM35 |= 0x03;LCDM36W |= 0x0100;break;
+           case 8:LCDM35 |= 0x03;LCDM36W |= 0x0703;break;
+           case 9:LCDM35 |= 0x03;LCDM36W |= 0x0303;break;
+          }
+
+       LCDM34 &= 0x18;LCDM33 &= 0x1C;LCDM32 &= 0x1C;    //clear out bits that are related to digit6
+
+       switch(lsb6)
+          {
+          case 0:LCDM32 |= 0x03;LCDM33 |= 0x02;LCDM34 |= 0x07;break;
+          case 1:LCDM32 |= 0x03;LCDM33 |= 0x00;LCDM34 |= 0x00;break;
+          case 2:LCDM32 |= 0x01;LCDM33 |= 0x03;LCDM34 |= 0x05;break;
+          case 3:LCDM32 |= 0x03;LCDM33 |= 0x03;LCDM34 |= 0x01;break;
+          case 4:LCDM32 |= 0x03;LCDM33 |= 0x01;LCDM34 |= 0x02;break;
+          case 5:LCDM32 |= 0x02;LCDM33 |= 0x03;LCDM34 |= 0x03;break;
+          case 6:LCDM32 |= 0x02;LCDM33 |= 0x03;LCDM34 |= 0x07;break;
+          case 7:LCDM32 |= 0x03;LCDM33 |= 0x00;LCDM34 |= 0x01;break;
+          case 8:LCDM32 |= 0x03;LCDM33 |= 0x03;LCDM34 |= 0x07;break;
+          case 9:LCDM32 |= 0x03;LCDM33 |= 0x03;LCDM34 |= 0x03;break;
+         }
+
+         LCDM31 &= 0x18;LCDM30 &= 0x1C;LCDM29 &= 0x1C;    //clear out bits that are related to digi7
+
+        switch(lsb5)
+           {
+           case 0:LCDM29 |= 0x03;LCDM30 |= 0x02;LCDM31 |= 0x07;break;
+           case 1:LCDM29 |= 0x03;LCDM30 |= 0x00;LCDM31 |= 0x00;break;
+           case 2:LCDM29 |= 0x01;LCDM30 |= 0x03;LCDM31 |= 0x05;break;
+           case 3:LCDM29 |= 0x03;LCDM30 |= 0x03;LCDM31 |= 0x01;break;
+           case 4:LCDM29 |= 0x03;LCDM30 |= 0x01;LCDM31 |= 0x02;break;
+           case 5:LCDM29 |= 0x02;LCDM30 |= 0x03;LCDM31 |= 0x03;break;
+           case 6:LCDM29 |= 0x02;LCDM30 |= 0x03;LCDM31 |= 0x07;break;
+           case 7:LCDM29 |= 0x03;LCDM30 |= 0x00;LCDM31 |= 0x01;break;
+           case 8:LCDM29 |= 0x03;LCDM30 |= 0x03;LCDM31 |= 0x07;break;
+           case 9:LCDM29 |= 0x03;LCDM30 |= 0x03;LCDM31 |= 0x03;break;
+          }
+          LCDM28 &= 0x18;LCDM27 &= 0x1C;LCDM26 &= 0x1C;    //clear out bits that are related to digi8
+
+       switch(lsb4)
+          {
+          case 0:LCDM26 |= 0x03;LCDM27 |= 0x02;LCDM28 |= 0x07;break;
+          case 1:LCDM26 |= 0x03;LCDM27 |= 0x00;LCDM28 |= 0x00;break;
+          case 2:LCDM26 |= 0x01;LCDM27 |= 0x03;LCDM28 |= 0x05;break;
+          case 3:LCDM26 |= 0x03;LCDM27 |= 0x03;LCDM28 |= 0x01;break;
+          case 4:LCDM26 |= 0x03;LCDM27 |= 0x01;LCDM28 |= 0x02;break;
+          case 5:LCDM26 |= 0x02;LCDM27 |= 0x03;LCDM28 |= 0x03;break;
+          case 6:LCDM26 |= 0x02;LCDM27 |= 0x03;LCDM28 |= 0x07;break;
+          case 7:LCDM26 |= 0x03;LCDM27 |= 0x00;LCDM28 |= 0x01;break;
+          case 8:LCDM26 |= 0x03;LCDM27 |= 0x03;LCDM28 |= 0x07;break;
+          case 9:LCDM26 |= 0x03;LCDM27 |= 0x03;LCDM28 |= 0x03;break;
+         }
+
+         LCDM25 &= 0x18;LCDM24 &= 0x1C;LCDM23 &= 0x1C;    //clear out bits that are related to digi9
+
+       switch(lsb3)
+          {
+          case 0:LCDM23 |= 0x03;LCDM24 |= 0x02;LCDM25 |= 0x07;break;
+          case 1:LCDM23 |= 0x03;LCDM24 |= 0x00;LCDM25 |= 0x00;break;
+          case 2:LCDM23 |= 0x01;LCDM24 |= 0x03;LCDM25 |= 0x05;break;
+          case 3:LCDM23 |= 0x03;LCDM24 |= 0x03;LCDM25 |= 0x01;break;
+          case 4:LCDM23 |= 0x03;LCDM24 |= 0x01;LCDM25 |= 0x02;break;
+          case 5:LCDM23 |= 0x02;LCDM24 |= 0x03;LCDM25 |= 0x03;break;
+          case 6:LCDM23 |= 0x02;LCDM24 |= 0x03;LCDM25 |= 0x07;break;
+          case 7:LCDM23 |= 0x03;LCDM24 |= 0x00;LCDM25 |= 0x01;break;
+          case 8:LCDM23 |= 0x03;LCDM24 |= 0x03;LCDM25 |= 0x07;break;
+          case 9:LCDM23 |= 0x03;LCDM24 |= 0x03;LCDM25 |= 0x03;break;
+         }
+
+
+        LCDM22 &= 0x18;LCDM21 &= 0x1C; LCDM20 &= 0x1C; //clear out bits that are related to digi10
+
+      switch(lsb2)
+         {
+         case 0:LCDM20 |= 0x03;LCDM21|= 0x02;LCDM22 |= 0x07;break;
+         case 1:LCDM20 |= 0x03;LCDM21|= 0x00;LCDM22 |= 0x00;break;
+         case 2:LCDM20 |= 0x01;LCDM21|= 0x03;LCDM22 |= 0x05;break;
+         case 3:LCDM20 |= 0x03;LCDM21|= 0x03;LCDM22 |= 0x01;break;
+         case 4:LCDM20 |= 0x03;LCDM21|= 0x01;LCDM22 |= 0x02;break;
+         case 5:LCDM20 |= 0x02;LCDM21|= 0x03;LCDM22 |= 0x03;break;
+         case 6:LCDM20 |= 0x02;LCDM21|= 0x03;LCDM22 |= 0x07;break;
+         case 7:LCDM20 |= 0x03;LCDM21|= 0x00;LCDM22 |= 0x01;break;
+         case 8:LCDM20 |= 0x03;LCDM21|= 0x03;LCDM22 |= 0x07;break;
+         case 9:LCDM20 |= 0x03;LCDM21|= 0x03;LCDM22 |= 0x03;break;
         }
+
+       LCDM19&= 0x1C;LCDM18 &= 0x1B;LCDM17 &= 0x1C;    //clear out bits that are related to digi11
+
+     switch(lsb1)
+        {
+         case 0:LCDM19 |= 0x03;LCDM18 |= 0x05;LCDM17 |= 0x03;break;
+         case 1:LCDM19 |= 0x00;LCDM18 |= 0x00;LCDM17 |= 0x03;break;
+         case 2:LCDM19 |= 0x02;LCDM18 |= 0x07;LCDM17 |= 0x01;break;
+         case 3:LCDM19 |= 0x00;LCDM18 |= 0x07;LCDM17 |= 0x03;break;
+         case 4:LCDM19 |= 0x01;LCDM18 |= 0x02;LCDM17 |= 0x03;break;
+         case 5:LCDM19 |= 0x01;LCDM18 |= 0x07;LCDM17 |= 0x02;break;
+         case 6:LCDM19 |= 0x03;LCDM18 |= 0x07;LCDM17 |= 0x02;break;
+         case 7:LCDM19 |= 0x00;LCDM18 |= 0x01;LCDM17 |= 0x03;break;
+         case 8:LCDM19 |= 0x03;LCDM18 |= 0x07;LCDM17 |= 0x03;break;
+         case 9:LCDM19 |= 0x01;LCDM18 |= 0x07;LCDM17 |= 0x03;break;
+        }
+
+     LCDM16 &= 0x18;LCDM15 &= 0x1C;LCDM14 &= 0x1C;    //clear out bits that are related to digi12
+
+    switch(lsb0)
+       {
+        case 0:LCDM16 |= 0x03;LCDM15 |= 0x05;LCDM14 |= 0x03;break;
+        case 1:LCDM16 |= 0x00;LCDM15 |= 0x00;LCDM14 |= 0x03;break;
+        case 2:LCDM16 |= 0x02;LCDM15 |= 0x07;LCDM14 |= 0x01;break;
+        case 3:LCDM16 |= 0x00;LCDM15 |= 0x07;LCDM14 |= 0x03;break;
+        case 4:LCDM16 |= 0x01;LCDM15 |= 0x02;LCDM14 |= 0x03;break;
+        case 5:LCDM16 |= 0x01;LCDM15 |= 0x07;LCDM14 |= 0x02;break;
+        case 6:LCDM16 |= 0x03;LCDM15 |= 0x07;LCDM14 |= 0x02;break;
+        case 7:LCDM16 |= 0x00;LCDM15 |= 0x01;LCDM14 |= 0x03;break;
+        case 8:LCDM16 |= 0x03;LCDM15 |= 0x07;LCDM14 |= 0x03;break;
+        case 9:LCDM16 |= 0x01;LCDM15 |= 0x07;LCDM14 |= 0x03;break;
+       }
+         }
+
+  void LcdDisplayTopRow(unsigned int incoming)
+        {
+         unsigned int temp;
+         unsigned int lsb3;
+         unsigned int lsb2;
+         unsigned int lsb1;
+         unsigned int lsb0;
+
+         temp = Dec2BCD(incoming);
+         lsb3 = (temp & 0xF000) >>12;
+         lsb2 = (temp & 0xF00) >>8;
+         lsb1 = (temp & 0xF0) >>4;
+         lsb0 = (temp & 0x0F) >>0;
+
+         LCDM6W &= 0x0001;    //clear out bits that are related to msb
+
+         switch(lsb3)
+             {
+             case 0:LCDM6W |= 0x1E14;break;
+             case 1:LCDM6W |= 0x0C00;break;
+             case 2:LCDM6W |= 0x1A0C;break;
+             case 3:LCDM6W |= 0x1E08;break;
+             case 4:LCDM6W |= 0x0C18;break;
+             case 5:LCDM6W |= 0x1618;break;
+             case 6:LCDM6W |= 0x161C;break;
+             case 7:LCDM6W |= 0x1C00;break;
+             case 8:LCDM6W |= 0x1E1C;break;
+             case 9:LCDM6W |= 0x1E18;break;
+             }
+
+         LCDM8W &= 0x0101;    //clear out bits that are related to digit 2
+
+         switch(lsb2)   // digit 2 - top row second from left
+            {
+            case 0:LCDM8W |= 0x1C16;break;
+            case 1:LCDM8W |= 0x0C00;break;
+            case 2:LCDM8W |= 0x180E;break;
+            case 3:LCDM8W |= 0x1C0A;break;
+            case 4:LCDM8W |= 0x0C18;break;
+            case 5:LCDM8W |= 0x141A;break;
+            case 6:LCDM8W |= 0x141E;break;
+            case 7:LCDM8W |= 0x1C00;break;
+            case 8:LCDM8W |= 0x1C1E;break;
+            case 9:LCDM8W |= 0x1C1A;break;
+            }
+
+         LCDM8W   &= 0x1D1F;LCDM10W  &= 0x0B01; //clear out bits that are related to digit 3
+
+         switch(lsb1)   // digit 3 - top row third from left
+            {
+            case 0:LCDM8W |= 0x0200;LCDM10W |= 0x141A;break;
+            case 1:LCDM8W |= 0x0000;LCDM10W |= 0x1400;break;
+            case 2:LCDM8W |= 0x0200;LCDM10W |= 0x1016;break;
+            case 3:LCDM8W |= 0x0000;LCDM10W |= 0x1416;break;
+            case 4:LCDM8W |= 0x0000;LCDM10W |= 0x140C;break;
+            case 5:LCDM8W |= 0x0000;LCDM10W |= 0x041E;break;
+            case 6:LCDM8W |= 0x0200;LCDM10W |= 0x041E;break;
+            case 7:LCDM8W |= 0x0000;LCDM10W |= 0x1410;break;
+            case 8:LCDM8W |= 0x0200;LCDM10W |= 0x141E;break;
+            case 9:LCDM8W |= 0x0000;LCDM10W |= 0x141E;break;
+            }
+
+         LCDM10W  &= 0x141F; LCDM12W &= 0x1F01; //clear out bits that are related to digit 4
+
+       switch(lsb0)   // digit 4 - lsb
+          {
+          case 0:LCDM10W |= 0x0B00;LCDM12W |= 0x001A;break;
+          case 1:LCDM10W |= 0x0000;LCDM12W |= 0x000A;break;
+          case 2:LCDM10W |= 0x0300;LCDM12W |= 0x001C;break;
+          case 3:LCDM10W |= 0x0100;LCDM12W |= 0x001E;break;
+          case 4:LCDM10W |= 0x0800;LCDM12W |= 0x000E;break;
+          case 5:LCDM10W |= 0x0900;LCDM12W |= 0x0016;break;
+          case 6:LCDM10W |= 0x0B00;LCDM12W |= 0x0016;break;
+          case 7:LCDM10W |= 0x0000;LCDM12W |= 0x001A;break;
+          case 8:LCDM10W |= 0x0B00;LCDM12W |= 0x001E;break;
+          case 9:LCDM10W |= 0x0900;LCDM12W |= 0x001E;break;
+          }
+      }
 
 unsigned long int Dec2BcdLong(unsigned long int value)
       {
@@ -148,7 +415,7 @@ unsigned long int Dec2BcdLong(unsigned long int value)
           }return Output;
       }
 
-unsigned int Dec2BCD(int value)
+unsigned int Dec2BCD(unsigned int value)
      {
         unsigned int i;
         unsigned int Output;
@@ -160,7 +427,7 @@ unsigned int Dec2BCD(int value)
              } return Output;
      }
 
-extern char* itoa(int value, char* result)
+/*extern char* itoa(int value, char* result)
     {
 
             char* ptr = result, *ptr1 = result, tmp_char;
@@ -183,6 +450,6 @@ extern char* itoa(int value, char* result)
             }
         return result;
     }
-
+*/
 
 

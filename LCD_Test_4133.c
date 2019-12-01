@@ -40,6 +40,8 @@
 //!
 //*****************************************************************************
 #include "driverlib.h"
+#include "lcd_display.h"
+
 
 void main(void)
 {
@@ -70,16 +72,13 @@ void main(void)
   //  P7OUT = 0xFF;
 
     // L0~L26 & L36~L39 pins selected
-    LCD_E_setPinAsLCDFunctionEx(LCD_E_BASE, LCD_E_SEGMENT_LINE_0, LCD_E_SEGMENT_LINE_5);
-    LCD_E_setPinAsLCDFunctionEx(LCD_E_BASE, LCD_E_SEGMENT_LINE_8, LCD_E_SEGMENT_LINE_21);
-    LCD_E_setPinAsLCDFunction(LCD_E_BASE, LCD_E_SEGMENT_LINE_24);
-    LCD_E_setPinAsLCDFunctionEx(LCD_E_BASE, LCD_E_SEGMENT_LINE_30, LCD_E_SEGMENT_LINE_37);
+    LCD_E_setPinAsLCDFunctionEx(LCD_E_BASE, LCD_E_SEGMENT_LINE_0, LCD_E_SEGMENT_LINE_38);
 
     LCD_E_initParam initParams = {0};
     initParams.clockSource = LCD_E_CLOCKSOURCE_XTCLK;
     initParams.clockDivider = LCD_E_CLOCKDIVIDER_10;
     initParams.muxRate = LCD_E_5_MUX;
-    initParams.waveforms = LCD_E_STANDARD_WAVEFORMS;
+    initParams.waveforms = LCD_E_LOW_POWER_WAVEFORMS;
     initParams.segments = LCD_E_SEGMENTS_ENABLED;
 
     // Init LCD as 8-mux mode
@@ -87,58 +86,47 @@ void main(void)
 
     // LCD Operation - Mode 3, internal 3.08v, charge pump 256Hz
     LCD_E_setVLCDSource(LCD_E_BASE, LCD_E_INTERNAL_REFERENCE_VOLTAGE, LCD_E_EXTERNAL_SUPPLY_VOLTAGE);
-    LCD_E_setVLCDVoltage(LCD_E_BASE, LCD_E_REFERENCE_VOLTAGE_2_60V);
+    LCD_E_setVLCDVoltage(LCD_E_BASE, LCD_E_REFERENCE_VOLTAGE_2_72V);
 
     LCD_E_enableChargePump(LCD_E_BASE);
     LCD_E_setChargePumpFreq(LCD_E_BASE, LCD_E_CHARGEPUMP_FREQ_16);
 
     // Clear LCD memory
-    LCD_E_clearAllMemory(LCD_E_BASE);
+      LCD_E_clearAllMemory(LCD_E_BASE);
+
 
     // Configure COMs and SEGs
     // L0, L1, L2, L3: COM pins
     // L0 = COM0, L1 = COM1, L2 = COM2, L3 = COM3
-    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_37, LCD_E_MEMORY_COM0);
-    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_36, LCD_E_MEMORY_COM1);
-    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_35, LCD_E_MEMORY_COM2);
-    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_34, LCD_E_MEMORY_COM3);
-    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_33, LCD_E_MEMORY_COM4);
-    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_32, LCD_E_MEMORY_COM5);
-    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_31, LCD_E_MEMORY_COM6);
-    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_30, LCD_E_MEMORY_COM7);
+    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_0, LCD_E_MEMORY_COM0);
+    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_1, LCD_E_MEMORY_COM1);
+    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_2, LCD_E_MEMORY_COM2);
+    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_3, LCD_E_MEMORY_COM3);
+    LCD_E_setPinAsCOM(LCD_E_BASE, LCD_E_SEGMENT_LINE_4, LCD_E_MEMORY_COM4);
+
+  //  LCD_E_on(LCD_E_BASE);
+
+    LCDM32W = 0x00;
+    LCDM34W = 0x00;
+    LCDM36W = 0x00;
 
     LCD_E_on(LCD_E_BASE);
 
-
-
-
-            LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_19, 0x12);
-            LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_18, 0x6B);
-            LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_17, 0x5B);
-            LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_16, 0x1E);
-
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_21, 0xBA);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_20, 0x3E);
-            LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_10, 0xC8);
-            LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_11, 0xFE);
-            LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_12, 0xF8);
-            LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_13, 0xEE);
-            LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_14, 0x48);
-            LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_15, 0xD6);
-
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_9, 0x5B);
-
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_8, 0x1E);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_5, 0x5D);
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_4, 0x13);
-
-           LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_3, 0x7F);
-
-         LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_2, 0x7F);
-    LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_1, 0x1F);
-       LCD_E_setMemory(LCD_E_BASE, LCD_E_SEGMENT_LINE_0, 0x77);
+     LcdDisplayTopRow(0000);
+    // LcdDisplayTopRow(1111);
+   //  LcdDisplayTopRow(2222);
+    // LcdDisplayTopRow(3333);
+    // LcdDisplayTopRow(4444);
+     //LcdDisplayTopRow(5555);
+    // LcdDisplayTopRow(6666);
+    // LcdDisplayTopRow(7777);
+   //  LcdDisplayTopRow(8888);
+   //  LcdDisplayTopRow(9999);
+    LcdDisplayMiddleRow(99999999);
+     LcdDisplayBottomRow(99999999);
+     //LcdDisplayTopRow(8300);
     // Turn on LCD
-    LCD_E_on(LCD_E_BASE);
+   LCD_E_on(LCD_E_BASE);
 
     // Enter LPM3.5
     PMM_turnOffRegulator();
