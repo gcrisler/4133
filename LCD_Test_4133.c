@@ -126,6 +126,13 @@ void main(void)
      LcdDisplayBottomRow(99999999);
      //LcdDisplayTopRow(8300);
     // Turn on LCD
+     LCD_E_setMemory(LCD_E_BASE, LCD_E_MEMORY_BLINKINGMEMORY_5, 0x1C);
+     LCD_E_setMemory(LCD_E_BASE, LCD_E_MEMORY_BLINKINGMEMORY_8, 0x01);
+     LCD_E_setMemory(LCD_E_BASE, LCD_E_MEMORY_BLINKINGMEMORY_35, 0x04);
+     LCD_E_setMemory(LCD_E_BASE, LCD_E_MEMORY_BLINKINGMEMORY_15, 0x18);
+     LCD_E_setMemory(LCD_E_BASE, LCD_E_MEMORY_BLINKINGMEMORY_19, 0x1C);
+     LCD_E_setMemory(LCD_E_BASE, LCD_E_MEMORY_BLINKINGMEMORY_32, 0x10);
+
    LCD_E_on(LCD_E_BASE);
 
     // Enter LPM3.5
