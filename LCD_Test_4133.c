@@ -42,6 +42,21 @@
 #include "driverlib.h"
 #include "lcd_display.h"
 
+//#include "Board.h"
+#include <stdbool.h>
+
+unsigned int i = 0;
+//unsigned int j = 0;
+//unsigned int loop = 0;
+struct buttons_declare {
+    unsigned int menu;
+    unsigned int reset;
+    unsigned int size;
+    unsigned int paddle;
+    bool    lock;
+};
+struct buttons_declare buttons;
+
 
 void main(void)
 {
@@ -63,6 +78,40 @@ void main(void)
 	//clear all OSC fault flag
 	CS_clearAllOscFlagsWithTimeout(1000);
 
+	//Initialize WDT module in timer interval mode,
+	      //with ACLK as source at an interval of 15 ms.
+	      WDT_A_initIntervalTimer(WDT_A_BASE,WDT_A_CLOCKSOURCE_ACLK,WDT_A_CLOCKDIVIDER_512);
+
+	      //Enable Watchdog Interupt
+	      SFR_clearInterrupt(SFR_WATCHDOG_INTERVAL_TIMER_INTERRUPT);
+	      SFR_enableInterrupt(SFR_WATCHDOG_INTERVAL_TIMER_INTERRUPT);
+
+	    //Enable S1 internal resistance as pull-Up resistance
+	    GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P1, GPIO_PIN0);
+	    GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P1, GPIO_PIN1);
+	    GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P1, GPIO_PIN2);
+	    GPIO_setAsInputPin(GPIO_PORT_P1, GPIO_PIN3);
+
+	    //S1 interrupt enabled
+	    GPIO_enableInterrupt(GPIO_PORT_P1,GPIO_PIN0);
+	    GPIO_enableInterrupt(GPIO_PORT_P1,GPIO_PIN1);
+	    GPIO_enableInterrupt(GPIO_PORT_P1,GPIO_PIN2);
+	    GPIO_enableInterrupt(GPIO_PORT_P1,GPIO_PIN3);
+
+	    //S1 Hi/Lo edge
+	    GPIO_selectInterruptEdge(GPIO_PORT_P1,GPIO_PIN0,GPIO_HIGH_TO_LOW_TRANSITION);
+	    GPIO_selectInterruptEdge(GPIO_PORT_P1,GPIO_PIN1,GPIO_HIGH_TO_LOW_TRANSITION);
+	    GPIO_selectInterruptEdge(GPIO_PORT_P1,GPIO_PIN2,GPIO_HIGH_TO_LOW_TRANSITION);
+	    GPIO_selectInterruptEdge(GPIO_PORT_P1,GPIO_PIN3,GPIO_HIGH_TO_LOW_TRANSITION);
+
+
+	    //S1 IFG cleared
+	    GPIO_clearInterrupt(GPIO_PORT_P1,GPIO_PIN0);
+	    GPIO_clearInterrupt(GPIO_PORT_P1,GPIO_PIN1);
+	    GPIO_clearInterrupt(GPIO_PORT_P1,GPIO_PIN2);
+	    GPIO_clearInterrupt(GPIO_PORT_P1,GPIO_PIN3);
+
+
     /*
      * Disable the GPIO power-on default high-impedance mode to activate
      * previously configured port settings
@@ -71,7 +120,7 @@ void main(void)
 
   //  P7OUT = 0xFF;
 
-    // L0~L26 & L36~L39 pins selected
+
     LCD_E_setPinAsLCDFunctionEx(LCD_E_BASE, LCD_E_SEGMENT_LINE_0, LCD_E_SEGMENT_LINE_38);
 
     LCD_E_initParam initParams = {0};
@@ -81,12 +130,12 @@ void main(void)
     initParams.waveforms = LCD_E_LOW_POWER_WAVEFORMS;
     initParams.segments = LCD_E_SEGMENTS_ENABLED;
 
-    // Init LCD as 8-mux mode
+    // Init LCD as 5-mux mode
     LCD_E_init(LCD_E_BASE, &initParams);
 
     // LCD Operation - Mode 3, internal 3.08v, charge pump 256Hz
     LCD_E_setVLCDSource(LCD_E_BASE, LCD_E_INTERNAL_REFERENCE_VOLTAGE, LCD_E_EXTERNAL_SUPPLY_VOLTAGE);
-    LCD_E_setVLCDVoltage(LCD_E_BASE, LCD_E_REFERENCE_VOLTAGE_2_72V);
+    LCD_E_setVLCDVoltage(LCD_E_BASE, LCD_E_REFERENCE_VOLTAGE_2_96V);
 
     LCD_E_enableChargePump(LCD_E_BASE);
     LCD_E_setChargePumpFreq(LCD_E_BASE, LCD_E_CHARGEPUMP_FREQ_16);
@@ -122,9 +171,9 @@ void main(void)
     // LcdDisplayTopRow(7777);
    //  LcdDisplayTopRow(8888);
    //  LcdDisplayTopRow(9999);
-    LcdDisplayMiddleRow(99999999);
-     LcdDisplayBottomRow(99999999);
-     //LcdDisplayTopRow(8300);
+    LcdDisplayMiddleRow(88888888);
+    LcdDisplayBottomRow(88888888);
+    LcdDisplayTopRow(buttons.menu +2);
     // Turn on LCD
      LCD_E_setMemory(LCD_E_BASE, LCD_E_MEMORY_BLINKINGMEMORY_5, 0x1C);
      LCD_E_setMemory(LCD_E_BASE, LCD_E_MEMORY_BLINKINGMEMORY_8, 0x01);
@@ -135,8 +184,72 @@ void main(void)
 
    LCD_E_on(LCD_E_BASE);
 
-    // Enter LPM3.5
-    PMM_turnOffRegulator();
-    __bis_SR_register(LPM4_bits | GIE);
-}
+  // SFR_enableInterrupt(SFR_NMI_PIN_INTERRUPT);
 
+    // Enter LPM3.5
+ //   PMM_turnOffRegulator();
+    __bis_SR_register(LPM4_bits | GIE);
+
+   //For debugger
+      __no_operation();
+}
+//******************************************************************************
+//
+//This is the PORT1_VECTOR interrupt vector service routine
+//
+//******************************************************************************
+
+#pragma vector=PORT1_VECTOR
+__interrupt
+
+void P1_ISR (void)
+            {
+            WDT_A_start(WDT_A_BASE);
+            GPIO_disableInterrupt(GPIO_PORT_P1, GPIO_PIN_ALL8);
+            i++;
+            }
+
+#pragma vector=WDT_VECTOR
+__interrupt
+
+void WDT_A_ISR (void)
+            {
+            GPIO_selectInterruptEdge(GPIO_PORT_P1,GPIO_PIN_ALL8,GPIO_LOW_TO_HIGH_TRANSITION);
+            GPIO_enableInterrupt(GPIO_PORT_P1, GPIO_PIN_ALL8);
+
+            if(!GPIO_getInputPinValue(GPIO_PORT_P1, GPIO_PIN0))
+                    {
+                    if(!buttons.lock) buttons.menu++;
+                    WDT_A_hold(WDT_A_BASE);
+                    buttons.lock = true;
+                    }
+            else if(!GPIO_getInputPinValue(GPIO_PORT_P1, GPIO_PIN1))
+                    {
+                    if(!buttons.lock)buttons.reset++;
+                    WDT_A_hold(WDT_A_BASE);
+                    buttons.lock = true;
+                    }
+            else if (!GPIO_getInputPinValue(GPIO_PORT_P1, GPIO_PIN2))
+                    {
+                    if(!buttons.lock)buttons.size++;
+                    WDT_A_hold(WDT_A_BASE);
+                    buttons.lock = true;
+                    }
+
+            else if (!GPIO_getInputPinValue(GPIO_PORT_P1, GPIO_PIN3))
+                    {
+                    if(!buttons.lock)buttons.paddle++;
+                    WDT_A_hold(WDT_A_BASE);
+                    buttons.lock = true;
+                    }
+
+            else
+                    {
+
+                    GPIO_enableInterrupt(GPIO_PORT_P1,GPIO_PIN_ALL8);
+                    buttons.lock = false;
+                    WDT_A_hold(WDT_A_BASE);
+                    }
+            LcdDisplayTopRow(buttons.paddle);
+
+        }
