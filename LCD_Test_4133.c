@@ -37,9 +37,14 @@ void main(void)
 
     PMM_unlockLPM5();
 
-     LcdDisplayTopRow(0000);
-    // LcdDisplayTopRow(1111);
-   //  LcdDisplayTopRow(2222);
+
+
+     LcdDisplayTopRow1(5673);
+
+     LcdDisplayTopRow(1111);
+
+     LcdDisplayTopRow1(2222);
+
     // LcdDisplayTopRow(3333);
     // LcdDisplayTopRow(4444);
      //LcdDisplayTopRow(5555);
@@ -58,12 +63,13 @@ void main(void)
    //  LCD_E_setMemory(LCD_E_BASE, LCD_E_MEMORY_BLINKINGMEMORY_19, 0x1C);
     // LCD_E_setMemory(LCD_E_BASE, LCD_E_MEMORY_BLINKINGMEMORY_32, 0x10);
 
-   LCD_E_on(LCD_E_BASE);
+
+
 
 
     // Enter LPM3.5
  //   PMM_turnOffRegulator();
-    __bis_SR_register(LPM4_bits | GIE);
+   __bis_SR_register(LPM4_bits | GIE);
 
    //For debugger
       __no_operation();
@@ -81,7 +87,7 @@ __interrupt void Port_1 (void)
            switch(_even_in_range(P1IV, 16))
                 {
                 case  1:{
-                    LcdDisplayBottomRow(11);
+                  //  LcdDisplayBottomRow(11);
                         //enter key pressed
                        // k = 0;
                        // while(enter != 0)
@@ -93,14 +99,14 @@ __interrupt void Port_1 (void)
                         }break;
                 case  2:    //middle button(plus & reset) depressed
                         {
-                            LcdDisplayBottomRow(22);
+                  //          LcdDisplayBottomRow(22);
                          // resettable_total = 0;
                          // display_total();
                         }break;
 
                 case  4:      //right button(minus & size) depressed
                         {
-                            LcdDisplayBottomRow(44);
+                     //       LcdDisplayBottomRow(44);
                            //display_schedule(1);
                          // display_size(size_pointer);       //print out size and schedule of pipe
                          // delay(300000);
@@ -111,7 +117,7 @@ __interrupt void Port_1 (void)
                          // delay(300000);
                         }break;
                 case 6: {
-                        LcdDisplayBottomRow(66);
+                       // LcdDisplayBottomRow(66);
 
                         }break;
 
@@ -135,7 +141,7 @@ __interrupt void Port_1 (void)
              {
              case 0: break;  //No interrupts
              case 2:         //RTC overflow
-                 LcdDisplayTopRow(i++);
+             LcdDisplayTopRow1(i++);
                  buttons.flag_update = true;
                  break;
              default: break;
@@ -148,8 +154,6 @@ __interrupt
 
 void WDT_A_ISR (void)
             {
-
-
             if(!GPIO_getInputPinValue(GPIO_PORT_P1, GPIO_PIN0))
                     {
                     if(!buttons.lock) buttons.menu++;
@@ -168,17 +172,14 @@ void WDT_A_ISR (void)
                     WDT_A_hold(WDT_A_BASE);
                     buttons.lock = true;
                     }
-
             else if (!GPIO_getInputPinValue(GPIO_PORT_P1, GPIO_PIN3))
                     {
                     if(!buttons.lock)buttons.paddle++;
                     WDT_A_hold(WDT_A_BASE);
                     buttons.lock = true;
                     }
-
             else
                     {
-
                     GPIO_enableInterrupt(GPIO_PORT_P1,GPIO_PIN_ALL8);
                     buttons.lock = false;
                     WDT_A_hold(WDT_A_BASE);
@@ -199,7 +200,7 @@ __interrupt void Timer_A(void)
               buttons.past_count = buttons.current_count;
               buttons.current_count = TA1CCR1;
               TA1CTL &= 0xFB0;
-              LcdDisplayBottomRow(buttons.current_count - buttons.past_count);
+          //    LcdDisplayBottomRow(buttons.current_count - buttons.past_count);
             }
 
                     break;      //ccr1 not used

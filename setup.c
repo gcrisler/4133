@@ -111,8 +111,8 @@ void init_gpio(void)
         LCD_E_enableChargePump(LCD_E_BASE);
         LCD_E_setChargePumpFreq(LCD_E_BASE, LCD_E_CHARGEPUMP_FREQ_16);
 
-        // Clear LCD memory
-          LCD_E_clearAllMemory(LCD_E_BASE);
+       // Clear LCD memory
+        LCD_E_clearAllMemory(LCD_E_BASE);
 
 
         // Configure COMs and SEGs

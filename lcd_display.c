@@ -22,6 +22,39 @@
 
      }
 
+ const unsigned int segment_data[10]=
+                         {
+                          0x7E,0x30,0x6D,0x79,0x33,0x5B,0x5F,0x70,0x7F,0x7B
+                         };
+
+ /*const unsigned int segment_data[10]=
+                         {0x3F,// display 0
+                         0x06,  // display 1
+                         0x5B,
+                         0x4F,  //display 3
+                         0x66,  //display 4
+                         0x6D,  //display 5
+                         0x7D,  //display 6
+                         0x07,  //display 7
+                         0x7F,  //display 8
+                         0x67   //display 9
+                        };
+*/
+ const unsigned int lcd_data[4][14]=
+              {7,0x10,7,0x08,7,0x04,7,0x02,6,0x04,6,0x10,6,0x08, // data for digit 1
+               9,0x10,9,0x08,9,0x04,8,0x02,8,0x04,8,0x10,8,0x08,
+               10,0x10,11,0x10,11,0x04,10,0x02,9,0x02,10,0x08,10,0x04,
+               12,0x10,12,0x08,12,0x02,11,0x01,11,0x02,11,0x08,12,0x04
+              };
+
+ void LcdClearTopRow(void)
+         {
+             LCDM6W &= 0x0001;
+             LCDM8W &= 0x0101;
+             LCDM10W &= 0x0001;
+             LCDM12W &= 0x0001;
+         }
+
  void LcdDisplayBottomRow(unsigned long int incoming)
           {
             unsigned long int temp;
@@ -338,7 +371,7 @@
          lsb1 = (temp & 0xF0) >>4;
          lsb0 = (temp & 0x0F) >>0;
 
-         LCDM6W &= 0x0001;    //clear out bits that are related to msb
+         LcdClearTopRow();
 
          switch(lsb3)
              {
@@ -354,8 +387,6 @@
              case 9:LCDM6W |= 0x1E18;break;
              }
 
-         LCDM8W &= 0x0101;    //clear out bits that are related to digit 2
-
          switch(lsb2)   // digit 2 - top row second from left
             {
             case 0:LCDM8W |= 0x1C16;break;
@@ -369,8 +400,6 @@
             case 8:LCDM8W |= 0x1C1E;break;
             case 9:LCDM8W |= 0x1C1A;break;
             }
-
-         LCDM8W   &= 0x1D1F;LCDM10W  &= 0x0B01; //clear out bits that are related to digit 3
 
          switch(lsb1)   // digit 3 - top row third from left
             {
@@ -386,8 +415,6 @@
             case 9:LCDM8W |= 0x0000;LCDM10W |= 0x141E;break;
             }
 
-         LCDM10W  &= 0x141F; LCDM12W &= 0x1F01; //clear out bits that are related to digit 4
-
        switch(lsb0)   // digit 4 - lsb
           {
           case 0:LCDM10W |= 0x0B00;LCDM12W |= 0x001A;break;
@@ -402,6 +429,40 @@
           case 9:LCDM10W |= 0x0900;LCDM12W |= 0x001E;break;
           }
       }
+
+
+  void LcdDisplayTopRow1(unsigned int incoming)
+        {
+
+         LcdClearTopRow();
+         unsigned int temp;
+         unsigned int lsb[4];
+         unsigned int loop_digit = 0;
+         unsigned int loop_segment = 0;
+         unsigned int roller;
+
+         long int i;
+
+         temp = Dec2BCD(incoming);
+         lsb[0] = (temp & 0xF000) >>12;
+         lsb[1] = (temp & 0xF00) >>8;
+         lsb[2] = (temp & 0xF0) >>4;
+         lsb[3] = (temp & 0x0F) >>0;
+
+
+for(loop_digit = 0; loop_digit <4; loop_digit++)
+    {
+    roller = segment_data[lsb[loop_digit]];
+    loop_segment = 6;
+
+     do{
+          if(roller & 0x01) HWREG8(LCD_E_BASE + OFS_LCDM0W + lcd_data[loop_digit][loop_segment*2]) |= lcd_data[loop_digit][loop_segment*2+1];
+          roller = roller >> 1;
+         }while(loop_segment--);
+    }
+  }
+
+
 
 unsigned long int Dec2BcdLong(unsigned long int value)
       {

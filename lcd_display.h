@@ -16,6 +16,8 @@ unsigned long int Dec2BcdLong(unsigned long int);
 void LcdDisplayTopRow(unsigned int);
 void LcdDisplayMiddleRow(unsigned long int);
 void LcdDisplayBottomRow(unsigned long int);
+void LcdDisplayTopRow1(unsigned int incoming);
+void LcdClearTopRow(void);
 
 
 #endif /* LCD_DISPLAY_H_ */
